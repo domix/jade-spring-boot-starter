@@ -14,10 +14,16 @@ jdk:
 env:
 - TERM=dumb
 
+before_install:
+  - pip install --user codecov
+
 install: true
 
 before_script:
   - ./gradlew --version
 
 script:
-- ./gradlew test jacocoTestReport coveralls
+  - ./gradlew test jacocoTestReport coveralls
+
+after_success:
+  - codecov

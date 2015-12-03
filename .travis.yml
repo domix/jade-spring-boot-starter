@@ -2,17 +2,15 @@ sudo: false
 
 cache:
   directories:
-  - $HOME/.gradle
+    - $HOME/.gradle
 
 language: java
 
 jdk:
-- oraclejdk7
-- oraclejdk8
-- openjdk7
+  - oraclejdk8
 
 env:
-- TERM=dumb
+  - TERM=dumb
 
 before_install:
   - pip install --user codecov

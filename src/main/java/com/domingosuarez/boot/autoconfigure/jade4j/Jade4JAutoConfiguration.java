@@ -16,7 +16,6 @@
  */
 package com.domingosuarez.boot.autoconfigure.jade4j;
 
-import com.domingosuarez.boot.autoconfigure.jade4j.JadeHelper;
 import de.neuland.jade4j.Jade4J;
 import de.neuland.jade4j.JadeConfiguration;
 import de.neuland.jade4j.spring.template.SpringTemplateLoader;
@@ -44,6 +43,10 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import javax.servlet.Servlet;
 import java.util.Map;
+import java.util.function.Predicate;
+
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 
 /**
  * {@link org.springframework.boot.autoconfigure.EnableAutoConfiguration Auto-configuration} for jade4j.
@@ -75,11 +78,11 @@ public class Jade4JAutoConfiguration {
     @PostConstruct
     public void checkTemplateLocationExists() {
       Boolean checkTemplateLocation = this.environment.getProperty("checkTemplateLocation", Boolean.class, true);
-      if (checkTemplateLocation) {
+      of(checkTemplateLocation).filter(check -> check.booleanValue()).ifPresent(check -> {
         Resource resource = this.resourceLoader.getResource(this.environment.getProperty("prefix", DEFAULT_PREFIX));
         Assert.state(resource.exists(), "Cannot find template location: "
-            + resource + " (please add some templates or check your jade4j configuration)");
-      }
+          + resource + " (please add some templates or check your jade4j configuration)");
+      });
     }
 
     @Bean
@@ -130,8 +133,8 @@ public class Jade4JAutoConfiguration {
       resolver.setConfiguration(jadeConfiguration);
 
       resolver.setContentType(appendCharset(
-          this.environment.getProperty("contentType", "text/html"),
-          templateEngine.getEncoding()));
+        this.environment.getProperty("contentType", "text/html"),
+        templateEngine.getEncoding()));
 
       resolver.setViewNames(this.environment.getProperty("viewNames", String[].class));
       // This resolver acts as a fallback resolver (e.g. like a
@@ -152,25 +155,24 @@ public class Jade4JAutoConfiguration {
         @Override
         public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
           JadeHelper annotation = AnnotationUtils.findAnnotation(bean.getClass(), JadeHelper.class);
-          if (annotation != null) {
+
+          ofNullable(annotation).ifPresent(foundAnnotation -> {
             Map<String, Object> variables = jadeConfiguration.getSharedVariables();
             variables.put(beanName, bean);
             jadeConfiguration.setSharedVariables(variables);
-          }
+          });
 
           return bean;
         }
       };
     }
 
-
-    private String appendCharset(String type, String charset) {
-      if (type.contains("charset=")) {
-        return type;
-      }
-      return type + ";charset=" + charset;
+    public static Predicate<String> hasCharset() {
+      return p -> p.contains("charset=");
     }
 
+    private String appendCharset(String type, String charset) {
+      return of(type).filter(hasCharset()).orElseGet(() -> ";charset=" + charset);
+    }
   }
-
 }

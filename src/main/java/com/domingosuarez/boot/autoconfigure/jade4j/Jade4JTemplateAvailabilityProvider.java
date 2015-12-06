@@ -19,7 +19,9 @@ package com.domingosuarez.boot.autoconfigure.jade4j;
 import org.springframework.boot.autoconfigure.template.TemplateAvailabilityProvider;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.util.ClassUtils;
+
+import static java.util.Optional.ofNullable;
+import static org.springframework.util.ClassUtils.isPresent;
 
 /**
  * {@link org.springframework.boot.autoconfigure.template.TemplateAvailabilityProvider} that provides availability information for
@@ -31,12 +33,12 @@ public class Jade4JTemplateAvailabilityProvider implements TemplateAvailabilityP
 
   @Override
   public boolean isTemplateAvailable(String view, Environment environment, ClassLoader classLoader, ResourceLoader resourceLoader) {
-    if (ClassUtils.isPresent("de.neuland.jade4j.spring.template.SpringTemplateLoader", classLoader)) {
+    boolean present = isPresent("de.neuland.jade4j.spring.template.SpringTemplateLoader", classLoader);
+
+    return ofNullable(present).map(f -> {
       String prefix = environment.getProperty("spring.jade4j.prefix", Jade4JAutoConfiguration.DEFAULT_PREFIX);
       String suffix = environment.getProperty("spring.jade4j.suffix", Jade4JAutoConfiguration.DEFAULT_SUFFIX);
       return resourceLoader.getResource(prefix + view + suffix).exists();
-    }
-
-    return false;
+    }).orElse(false);
   }
 }
